@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Pengelolaan Sampah - Kabupaten Lampung Selatan</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        html, body {
+            height: auto;
+            min-height: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e5799, #207cca, #2989d8);
+            color: #fff;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 15px;
+            gap: 15px;
+        }
+
+        
+        /* Header Styles */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 25px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
+        }
+
+        .logo-recycle {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo-recycle i {
+            font-size: 32px;
+            color: white;
+        }
+
+        .logo-kabupaten {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .logo-kabupaten img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 5px;
+        }
+
+        .header-content {
+            flex: 1;
+            margin: 0 20px;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            color: #fff;
+            background: linear-gradient(to right, #ffffff, #d1ffd1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: #e0f7ff;
+            max-width: 800px;
+            line-height: 1.5;
+        }
+
+        /* Main Content Area */
+        .content {
+            display: flex;
+            gap: 20px;
+            flex-grow: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        
+        /* Map Container */
+        #map {
+            flex: 2;
+            position: relative;
+            border-radius: 15px;
+            background: #0d1b2a;
+            overflow: hidden;
+            min-height: 400px;
+            height: 100%;
+        }
+
+        .leaflet-container {
+            height: 100% !important;
+            width: 100% !important;
+            border-radius: 15px;
+        }
+        
+        /* Panel Styles */
+        .panel {
+            flex: 1;
+            min-width: 320px;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #2c3e50;
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow-y: auto;
+            max-height: 75vh; /* lebih aman untuk laptop kecil dan zoom 100% */
+        }
+
+        .panel h2 {
+            color: #27ae60;
+            margin-bottom: 20px;
+            font-size: 1.6rem;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .panel h2 i {
+            background: #27ae60;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .info-card {
+            background: #27ae60;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .info-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+        
+        .info-card p {
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        
+        .location-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            min-height: 0;
+            max-height: 100%; /* supaya tetap dalam batas panel */
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            padding-right: 8px;
+        }
+
+        
+        .location-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .location-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .location-list::-webkit-scrollbar-thumb {
+            background-color: #27ae60;
+            border-radius: 3px;
+        }
+        
+        .location-item {
+            padding: 12px;
+            border-bottom: 1px solid #ecf0f1;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .location-item:last-child {
+            border-bottom: none;
+        }
+        
+        .location-item:hover {
+            background: #e8f8f0;
+            transform: translateX(5px);
+        }
+        
+        .location-item i {
+            color: #27ae60;
+            font-size: 1.2rem;
+        }
+        
+        .location-details {
+            flex: 1;
+        }
+        
+        .location-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+        
+        .location-type {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: auto;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #27ae60;
+            line-height: 1.2;
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+        
+        .action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: linear-gradient(to right, #e74c3c, #e67e22);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+        
+        /* Map Controls */
+        .map-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1001;
+        }
+        
+        .map-btn {
+            background: rgba(255, 255, 255, 0.9);
+            color: #27ae60;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            font-size: 1.2rem;
+        }
+        
+        .map-btn:hover {
+            background: #27ae60;
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        /* Legend */
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            color: #2c3e50;
+            z-index: 1001;
+            max-width: 250px;
+        }
+        
+        .legend h4 {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.1rem;
+            color: #27ae60;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        /* Footer */
+        .combined-footer {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px 25px;
+            border-radius: 15px;
+            flex-shrink: 0;
+        }
+
+        .footer-main {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .footer-branding {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .footer-logo {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            border-radius: 50%;
+        }
+
+        .footer-government {
+            color: #e0f7ff;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .footer-credit {
+            text-align: center;
+            color: #e0f7ff;
+            font-size: 0.85rem;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Background Animation */
+        .bg-bubbles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        
+        .bg-bubbles li {
+            position: absolute;
+            list-style: none;
+            display: block;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.15);
+            bottom: -160px;
+            animation: bubble 20s infinite;
+            border-radius: 50%;
+        }
+        
+        @keyframes bubble {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.5;
+            }
+            100% {
+                transform: translateY(-1000px) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 900px) {
+            .container {
+                padding: 10px;
+                gap: 10px;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+                padding: 15px;
+            }
+
+            .logo-recycle, .logo-kabupaten {
+                width: 60px;
+                height: 60px;
+            }
+
+            .logo-recycle i {
+                font-size: 28px;
+            }
+
+            .header-content {
+                text-align: center;
+                margin: 15px 0;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+                line-height: 1.3;
+                margin-bottom: 8px;
+            }
+
+            .subtitle {
+                font-size: 0.95rem;
+                line-height: 1.4;
+            }
+
+            .content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            #map {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding-bottom: 10px;
+                position: relative;
+            }
+
+            .panel {
+                order: 2;
+                min-width: auto;
+                max-width: none;
+                padding: 15px;
+            }
+
+            .map-controls {
+                position: relative;
+                margin: 10px auto;
+                flex-direction: row;
+                justify-content: center;
+                top: auto;
+                right: auto;
+                width: fit-content;
+            }
+            
+            .map-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+
+            .legend {
+                position: relative;
+                margin: 12px auto 0;
+                width: calc(100% - 30px);
+                max-width: 600px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                pointer-events: auto;
+            }
+
+            .legend h4 {
+                font-size: 1rem;
+                margin-bottom: 8px;
+            }
+
+            .legend-color {
+                width: 16px;
+                height: 16px;
+                margin-right: 8px;
+            }
+
+            .panel h2 {
+                font-size: 1.4rem;
+                margin-bottom: 15px;
+            }
+
+            .location-list {
+                max-height: 250px;
+            }
+
+            .stats {
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+
+            .combined-footer {
+                padding: 12px 15px;
+            }
+
+            .footer-branding {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .footer-logo {
+                width: 40px;
+                height: 40px;
+            }
+
+            .footer-government {
+                font-size: 0.9rem;
+                text-align: center;
+            }
+
+            .footer-credit {
+                font-size: 0.8rem;
+                line-height: 1.4;
+            }
+
+            .bg-bubbles li {
+                width: 20px;
+                height: 20px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 8px;
+            }
+
+            h1 {
+                font-size: 1.4rem;
+            }
+
+            .subtitle {
+                font-size: 0.9rem;
+            }
+
+            #map {
+                height: 45vh;
+                min-height: 250px;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .legend {
+                font-size: 0.8rem;
+                padding: 8px;
+            }
+
+            .map-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background animation -->
+    <ul class="bg-bubbles">
+        <li></li><li></li><li></li><li></li><li></li>
+        <li></li><li></li><li></li><li></li><li></li>
+    </ul>
+    
+    <div class="container">
+        <header>
+            <div class="logo-recycle"><i class="fas fa-recycle"></i></div>
+            <div class="header-content">
+              <h1>Sistem Pengelolaan Sampah Kabupaten Lampung Selatan</h1>
+              <p class="subtitle">Peta interaktif lokasi pengelolaan sampah dan fasilitas pendukung wilayah Kabupaten Lampung Selatan</p>
+            </div>
+            <div class="logo-kabupaten">
+              <img src="logo-lampung-selatan.png" alt="Logo Kabupaten Lampung Selatan">
+            </div>
+        </header>
+        
+        <div class="content">
+            <div id="map">
+                <div class="map-controls">
+                    <button class="map-btn" id="reset-view" title="Reset Peta">
+                        <i class="fas fa-globe-asia"></i>
+                    </button>
+                    <button class="map-btn" id="locate-me" title="Lokasi Saya">
+                        <i class="fas fa-location-arrow"></i>
+                    </button>
+                    <button class="map-btn" id="fullscreen" title="Layar Penuh">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+                
+            </div>
+            <div class="legend">
+                <h4><i class="fas fa-map-signs"></i> Legenda</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f39c12;"></div>
+                    <span>Tempat Pemrosesan Akhir (TPA)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e74c3c;"></div>
+                    <span>Tempat Penampungan Sementara (TPS)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #2ecc71;"></div>
+                    <span>Bank Sampah</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3498db;"></div>
+                    <span>Zona Potensial Pengelolaan Sampah (TPS3R)</span>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2><i class="fas fa-info-circle"></i> Fasilitas Pengelolaan Sampah</h2>
+                
+                <div class="panel-scroll">
+                    <!-- info-card, lokasi list, stats, tombol -->
+                    <div class="info-card">
+                        <h3><i class="fas fa-lightbulb"></i> Penentuan Zona Potensial TPS 3R</h3>
+                        <p>Pemetaan zona potensial untuk pembangunan TPS3R di Kabupaten Lampung Selatan bertujuan untuk mengidentifikasi wilayah yang membutuhkan fasilitas pengelolaan sampah. Saat ini, fasilitas pendukung dan pengelolaan sampah tersebar secara tidak merata, sehingga diperlukan penentuan lokasi strategis yang mampu meningkatkan efisiensi pengumpulan dan pengolahan sampah berbasis prinsip 3R (Reduce, Reuse, Recycle).</p>
+                    </div>
+                    
+                    <h2><i class="fas fa-map-marker-alt"></i> Lokasi Pengelolaan Sampah</h2>
+                    <div class="location-list">
+                        <div class="location-item" data-lat="-5.286733593" data-lng="105.2066961">
+                            <i class="fas fa-trash-alt"></i>
+                            <div class="location-details">
+                                <div class="location-name">TPS Natar</div>
+                                <div class="location-type">Tempat Penampungan Sampah</div>
+                            </div>
+                        </div>
+                        <div class="location-item" data-lat="-5.771438523" data-lng="105.7004218">
+                            <i class="fas fa-recycle"></i>
+                            <div class="location-details">
+                                <div class="location-name">TPS Penengahan</div>
+                                <div class="location-type">Tempat Penampungan Sampah</div>
+                            </div>
+                        </div>
+                        <div class="location-item" data-lat="-5.66161752447374" data-lng="105.660036039272">
+                            <i class="fas fa-recycle"></i>
+                            <div class="location-details">
+                                <div class="location-name">TPS Pasar Palas Jaya</div>
+                                <div class="location-type">Tempat Penampungan Sampah</div>
+                            </div>
+                        </div>
+                        <div class="location-item" data-lat="-5.682079264002888" data-lng="105.6167385">
+                            <i class="fas fa-trash-alt"></i>
+                            <div class="location-details">
+                                <div class="location-name">TPA Lubuk Kamal</div>
+                                <div class="location-type">Tempat Pemrosesan Akhir</div>
+                            </div>
+                        </div>
+                        <div class="location-item" data-lat="-5.320370754" data-lng="105.2965998">
+                            <i class="fas fa-recycle"></i>
+                            <div class="location-details">
+                                <div class="location-name">TPA Karang Anyar</div>
+                                <div class="location-type">Tempat Pemrosesan Akhir</div>
+                            </div>
+                        </div>
+                        <div class="location-item" data-lat="-5.317018305" data-lng="105.3780732">
+                            <i class="fas fa-recycle"></i>
+                            <div class="location-details">
+                                <div class="location-name">Bank Sampah Mutiara Jaya</div>
+                                <div class="location-type">Pengelolaan Sampah Mandiri</div>
+                            </div>
+                        </div>
+                        <div class="location-item" data-lat="-5.3263168" data-lng="105.1864456">
+                            <i class="fas fa-trash-alt"></i>
+                            <div class="location-details">
+                                <div class="location-name">Bank Sampah Babul Hikmah</div>
+                                <div class="location-type">Pengelolaan Sampah Mandiri</div>
+                            </div>
+                        </div>
+                        <div class="location-item" data-lat="-5.35699030614617" data-lng="105.301806695832">
+                            <i class="fas fa-recycle"></i>
+                            <div class="location-details">
+                                <div class="location-name">Bank Sampah Sahabat Gajah</div>
+                                <div class="location-type">Pengelolaan Sampah Mandiri</div>
+                            </div>
+                        </div>
+                        <div class="location-item" data-lat="-5.35617730838066" data-lng="105.305583302949">
+                            <i class="fas fa-recycle"></i>
+                            <div class="location-details">
+                                <div class="location-name">Bank Sampah Kertabumi</div>
+                                <div class="location-type">Pengelolaan Sampah Mandiri</div>
+                            </div>
+                        </div>
+                        <div class="location-item" data-lat="-5.61916262273923" data-lng="105.63236213988">
+                            <i class="fas fa-recycle"></i>
+                            <div class="location-details">
+                                <div class="location-name">Bank Sampah Aksara</div>
+                                <div class="location-type">Pengelolaan Sampah Mandiri</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-value">5</div>
+                            <div class="stat-label">Fasilitas Tersedia</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">5</div>
+                            <div class="stat-label">Bank Sampah Aktif</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">200</div>
+                            <div class="stat-label">Vol/Hari (Ton)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">15</div>
+                            <div class="stat-label">Zona Potensial</div>
+                        </div>
+                    </div>
+                    
+                    <button class="action-btn report">
+                        <i class="fas fa-exclamation-triangle"></i> Laporkan Masalah Sampah
+                    </button>
+                  </div>
+                  
+                
+            </div>
+        </div>  
+    
+        <div class="combined-footer">
+            <div class="footer-main">
+                <div class="footer-branding">
+                    <img src="logo-lampung-selatan.png" alt="Logo Lampung Selatan" class="footer-logo">
+                    <span class="footer-government">Pemerintah Kabupaten Lampung Selatan</span>
+                </div>
+                <div class="footer-credit">
+                    Indy Alin dan Muthiah Nafisah &copy; 2025 | Praktikum Sistem Informasi Geografis Terapan | Teknik Geomatika UPNVYK
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="index.js"></script>
+</body>
+</html>
